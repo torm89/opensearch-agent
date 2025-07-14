@@ -1,0 +1,3 @@
+[submodule "opensearch/documentation-website"]
+	path = opensearch/documentation-website
+	url = https://github.com/opensearch-project/documentation-website
