@@ -1,0 +1,28 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - dev
+
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build-agent:
+    name: Build agent
+    uses: ./.github/workflows/build_agent.yaml
+    secrets: inherit
+
+#  deploy-tofu:
+#    name: Deploy tofu
+#    uses: ./.github/workflows/deploy.yaml
+#    needs: [ deploy-scraper, deploy-processing ]
+#    needs: [ deploy-scraper, deploy-processing, deploy-concraft-pl2 ]
+#    with:
+#      environment: ${{ github.ref_name == 'main' && 'preprod' || 'dev' }}
+#    secrets: inherit

@@ -1,0 +1,75 @@
+name: Build agent
+
+on:
+  workflow_call:
+
+env:
+  BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+#  run-unit-tests:
+#    name: Run unit tests
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Git clone the repository
+#        uses: actions/checkout@v4
+#
+#      - name: Configure cache for node modules
+#        uses: actions/cache@v3
+#        with:
+#          path: |
+#            scraper/node_modules
+#            /home/runner/.cache/puppeteer
+#          key: ${{ runner.os }}-build-scraper-testing-${{ env.BRANCH_NAME }}-${{ hashFiles('scraper/yarn.lock') }}
+#          restore-keys: |
+#            ${{ runner.os }}-build-scraper-testing-${{ env.BRANCH_NAME }}-
+#
+#      - name: Install modules
+#        run: yarn install
+#        working-directory: scraper
+#
+#      - name: Run tests
+#        run: yarn test
+#        working-directory: scraper
+
+  build-images:
+    name: Build and publish scraper image
+    runs-on: ubuntu-22.04
+#    needs: [ run-unit-tests ]
+
+    steps:
+      - name: Git clone the repository
+        uses: actions/checkout@v4
+
+      - name: Set version hash
+        id: version
+        run: |
+          echo "HASH_AGENT=$(find scraper -type f -print0 | sort -z | xargs -0 sha1sum | sha1sum | rev | cut -c4- | rev)" >> $GITHUB_OUTPUT
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ECR_REPOSITORY_ROLE_ARN }}
+          role-session-name: ecrPublishAgentSession
+          aws-region: ${{ vars.AWS_ECR_REPOSITORY_REGION_NAME }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push to Amazon ECR
+        uses: docker/build-push-action@v5
+        with:
+          context: agent
+          push: true
+          cache-from: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/opensearch-agent:dockercache
+          cache-to: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/opensearch-agent:dockercache,mode=max,image-manifest=true
+          tags: ${{ steps.login-ecr.outputs.registry }}/opensearch-agent:${{ steps.version.outputs.HASH_AGENT }}
+          provenance: false
