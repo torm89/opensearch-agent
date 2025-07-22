@@ -3,5 +3,5 @@
   <component name="Black">
     <option name="sdkName" value="Poetry (opensearch-agent)" />
   </component>
-  <component name="ProjectRootManager" version="2" project-jdk-name="uv (opensearch-agent) (2)" project-jdk-type="Python SDK" />
+  <component name="ProjectRootManager" version="2" project-jdk-name="uv (opensearch-agent)" project-jdk-type="Python SDK" />
 </project>
