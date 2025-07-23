@@ -48,7 +48,7 @@ jobs:
       - name: Set version hash
         id: version
         run: |
-          echo "HASH_AGENT=$(find scraper -type f -print0 | sort -z | xargs -0 sha1sum | sha1sum | rev | cut -c4- | rev)" >> $GITHUB_OUTPUT
+          echo "HASH_AGENT=$(find agent -type f -print0 | sort -z | xargs -0 sha1sum | sha1sum | rev | cut -c4- | rev)" >> $GITHUB_OUTPUT
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3

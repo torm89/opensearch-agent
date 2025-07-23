@@ -18,11 +18,10 @@ jobs:
     uses: ./.github/workflows/build_agent.yaml
     secrets: inherit
 
-#  deploy-tofu:
-#    name: Deploy tofu
-#    uses: ./.github/workflows/deploy.yaml
-#    needs: [ deploy-scraper, deploy-processing ]
-#    needs: [ deploy-scraper, deploy-processing, deploy-concraft-pl2 ]
-#    with:
-#      environment: ${{ github.ref_name == 'main' && 'preprod' || 'dev' }}
-#    secrets: inherit
+  deploy-infa:
+    name: Deploy infra
+    uses: ./.github/workflows/deploy.yaml
+    needs: [ build-agent]
+    with:
+      environment: ${{ github.ref_name == 'main' && 'staging' || 'dev' }}
+    secrets: inherit
