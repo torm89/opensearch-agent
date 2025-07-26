@@ -1,5 +1,5 @@
-resource "aws_iam_role" "agent" {
-  name = "opensearch-agent-${var.env}-agent"
+resource "aws_iam_role" "agent_runtime" {
+  name = "opensearch-agent-${var.env}-agent-runtime"
 
   assume_role_policy = jsonencode({
     "Version" : "2012-10-17",
@@ -24,8 +24,8 @@ resource "aws_iam_role" "agent" {
   })
 }
 
-resource "aws_iam_policy" "agent" {
-  name   = "opensearch-agent-${var.env}-agent"
+resource "aws_iam_policy" "agent_runtime" {
+  name   = "opensearch-agent-${var.env}-agent-runtime"
 
   policy = jsonencode({
     "Version" : "2012-10-17",
