@@ -16,8 +16,10 @@ env:
   AWS_DEPLOYMENT_ACCOUNT_ID: ${{ vars.AWS_DEPLOYMENT_ACCOUNT_ID }}
   AWS_DEPLOYMENT_REGION_NAME: ${{ vars.AWS_DEPLOYMENT_REGION_NAME }}
   AWS_DEPLOYMENT_ROLE_ARN: ${{ vars.AWS_DEPLOYMENT_ROLE_ARN }}
+  AWS_ECR_AGENT_REPOSITORY_URI: ${{ vars.AWS_ECR_AGENT_REPOSITORY_URI }}
   TF_VAR_env: ${{ inputs.environment }}
   TF_VAR_region: ${{ vars.AWS_DEPLOYMENT_REGION_NAME }}
+  TF_VAR_agent_ecr_repository_account_id: ${{ vars.AWS_ECR_REPOSITORY_ACCOUNT_ID }}
 #  TF_VAR_ilert_webhook_url: ${{ secrets.ILERT_WEBHOOK_URL }}
 
 
@@ -67,11 +69,33 @@ jobs:
         run: tofu apply --auto-approve -var agent_image_version="${{ steps.version.outputs.HASH_AGENT }}"
         working-directory: ./infra/
 
-#      - name: Set up python
-#        id: setup-python
-#        uses: actions/setup-python@v4
-#        with:
-#          python-version: '3.9.13'
+      - name: Save tofu output
+        id: tofu-output
+        run: |
+          echo "AGENT_RUNTIME_NAME=$(tofu output -raw agent_runtime_name)" >> $GITHUB_OUTPUT
+          echo "AGENT_RUNTIME_ROLE_ARN=$(tofu output -raw agent_runtime_role_arn)" >> $GITHUB_OUTPUT
+        working-directory: ./infra/
+
+      - name: Set up python
+        id: setup-python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11.9'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: 0.8.0
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Update or create agent runtime
+        run: |
+          uv run python ./infra/scripts/agentcore_runtime_update_or_create.py \
+            --agent-runtime-name "${{ steps.tofu-output.outputs.AGENT_RUNTIME_NAME }}" \
+            --agent-runtime-image-uri "${{ env.AWS_ECR_AGENT_REPOSITORY_URI }}:${{ steps.version.outputs.HASH_AGENT }}" \
+            --agent-runtime-role-arn "${{ steps.tofu-output.outputs.AGENT_RUNTIME_ROLE_ARN }}"
 #
 #      - name: Install poetry
 #        run: |

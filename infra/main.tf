@@ -12,5 +12,5 @@ provider "aws" {
 # }
 
 locals {
-  agent_name = "opensearch-agent-${var.env}"
+  agent_name = "OpensearchAgent${title(var.env)}"
 }

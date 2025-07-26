@@ -1,5 +1,5 @@
-resource "aws_iam_role" "agent" {
-  name = "opensearch-agent-${var.env}-agent"
+resource "aws_iam_role" "agent_runtime" {
+  name = "opensearch-agent-${var.env}-agent-runtime"
 
   assume_role_policy = jsonencode({
     "Version" : "2012-10-17",
@@ -16,7 +16,7 @@ resource "aws_iam_role" "agent" {
             "aws:SourceAccount" : data.aws_caller_identity.current.account_id
           },
           "ArnLike" : {
-            "aws:SourceArn" : "arn:aws:bedrock-agentcore:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:*"
+            "aws:SourceArn" : "arn:aws:bedrock-agentcore:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:*"
           }
         }
       }
@@ -24,8 +24,8 @@ resource "aws_iam_role" "agent" {
   })
 }
 
-resource "aws_iam_policy" "agent" {
-  name   = "opensearch-agent-${var.env}-agent"
+resource "aws_iam_policy" "agent_runtime" {
+  name   = "opensearch-agent-${var.env}-agent-runtime"
 
   policy = jsonencode({
     "Version" : "2012-10-17",
@@ -35,10 +35,11 @@ resource "aws_iam_policy" "agent" {
         "Effect" : "Allow",
         "Action" : [
           "ecr:BatchGetImage",
-          "ecr:GetDownloadUrlForLayer"
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:GetAuthorizationToken"
         ],
         "Resource" : [
-          "arn:aws:ecr:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:repository/*"
+          "arn:aws:ecr:${data.aws_region.current.region}:${var.agent_ecr_repository_account_id}:repository/*"
         ]
       },
       {
@@ -48,7 +49,7 @@ resource "aws_iam_policy" "agent" {
           "logs:CreateLogGroup"
         ],
         "Resource" : [
-          "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/aws/bedrock-agentcore/runtimes/*"
+          "arn:aws:logs:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/bedrock-agentcore/runtimes/*"
         ]
       },
       {
@@ -57,7 +58,7 @@ resource "aws_iam_policy" "agent" {
           "logs:DescribeLogGroups"
         ],
         "Resource" : [
-          "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:*"
+          "arn:aws:logs:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:log-group:*"
         ]
       },
       {
@@ -67,7 +68,7 @@ resource "aws_iam_policy" "agent" {
           "logs:PutLogEvents"
         ],
         "Resource" : [
-          "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/aws/bedrock-agentcore/runtimes/*:log-stream:*"
+          "arn:aws:logs:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/bedrock-agentcore/runtimes/*:log-stream:*"
         ]
       },
       {
@@ -107,8 +108,8 @@ resource "aws_iam_policy" "agent" {
           "bedrock-agentcore:GetWorkloadAccessTokenForUserId"
         ],
         "Resource" : [
-          "arn:aws:bedrock-agentcore:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:workload-identity-directory/default",
-          "arn:aws:bedrock-agentcore:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:workload-identity-directory/default/workload-identity/${local.agent_name}-*"
+          "arn:aws:bedrock-agentcore:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:workload-identity-directory/default",
+          "arn:aws:bedrock-agentcore:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:workload-identity-directory/default/workload-identity/${local.agent_name}-*"
         ]
       },
       {
@@ -120,9 +121,14 @@ resource "aws_iam_policy" "agent" {
         ],
         "Resource" : [
           "arn:aws:bedrock:*::foundation-model/*",
-          "arn:aws:bedrock:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:*"
+          "arn:aws:bedrock:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:*"
         ]
       }
     ]
   })
+}
+
+resource "aws_iam_role_policy_attachment" "agent_runtime_attache_agent_runtime_policy" {
+  role       = aws_iam_role.agent_runtime.name
+  policy_arn = aws_iam_policy.agent_runtime.arn
 }

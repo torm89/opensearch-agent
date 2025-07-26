@@ -78,3 +78,4 @@ jobs:
           cache-to: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/opensearch-agent:dockercache,mode=max,image-manifest=true
           tags: ${{ steps.login-ecr.outputs.registry }}/opensearch-agent:${{ steps.version.outputs.HASH_AGENT }}
           provenance: false
+          platforms: linux/arm64
