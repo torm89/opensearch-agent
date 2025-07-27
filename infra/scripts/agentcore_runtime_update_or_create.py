@@ -1,6 +1,7 @@
 import os
 import time
 from argparse import ArgumentParser
+from typing import Optional
 
 import boto3
 
@@ -23,9 +24,9 @@ def create_agent_runtime(client, runtime_name, image_uri, network_configuration,
     }
 
 
-def update_agent_runtime(client, runtime_name, image_uri, network_configuration, role_arn):
+def update_agent_runtime(client, runtime_id, image_uri, network_configuration, role_arn):
     response = client.update_agent_runtime(
-        agentRuntimeName=runtime_name,
+        agentRuntimeId=runtime_id,
         agentRuntimeArtifact={
             'containerConfiguration': {
                 'containerUri': image_uri
@@ -41,16 +42,16 @@ def update_agent_runtime(client, runtime_name, image_uri, network_configuration,
     }
 
 
-def check_agent_runtime_exists(client, runtime_name):
+def check_agent_runtime_exists(client, runtime_name) -> Optional[str]:
     arguments = {}
     for _ in range(1000):
         response = client.list_agent_runtimes(**arguments)
         for runtime in response['agentRuntimes']:
             if runtime['agentRuntimeName'] == runtime_name:
-                return True
+                return runtime["agentRuntimeId"]
         arguments['nextToken'] = response.get('nextToken')
         if not arguments['nextToken']:
-            return False
+            return None
 
     raise Exception(f"Agent Runtime {runtime_name} not found after 1000 retries")
 
@@ -78,12 +79,12 @@ if __name__ == "__main__":
 
     client = boto3.client('bedrock-agentcore-control', region_name=os.environ['AWS_DEPLOYMENT_REGION_NAME'])
 
-    agent_runtime_exists = check_agent_runtime_exists(client, agent_runtime_name)
+    agent_runtime_id = check_agent_runtime_exists(client, agent_runtime_name)
 
-    if agent_runtime_exists:
+    if agent_runtime_id:
         print(f"Agent Runtime {agent_runtime_name} already exists. Updating...")
         agent_runtime = update_agent_runtime(
-            client, agent_runtime_name, agent_runtime_image_uri, agent_network_configuration, agent_runtime_role_arn)
+            client, agent_runtime_id, agent_runtime_image_uri, agent_network_configuration, agent_runtime_role_arn)
     else:
         print(f"Agent Runtime {agent_runtime_name} does not exist. Creating...")
         agent_runtime = create_agent_runtime(
