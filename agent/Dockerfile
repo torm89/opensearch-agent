@@ -11,6 +11,9 @@ RUN uv sync --frozen --no-cache
 
 # Copy agent file
 COPY agent.py ./
+COPY src ./src
+
+ENV PYTHONPATH="${PYTHONPATH}:/app/src"
 
 # Expose port
 EXPOSE 8080
