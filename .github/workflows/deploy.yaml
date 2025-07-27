@@ -52,6 +52,11 @@ jobs:
 #      - name: Checkout LFS objects
 #        run: git lfs checkout
 
+      - name: Copy environment files
+        run: |
+          cp pyproject.toml agent/pyproject.toml
+          cp uv.lock agent/uv.lock
+
       - name: Set version hash
         id: version
         run: |
@@ -63,9 +68,6 @@ jobs:
           role-to-assume: ${{ env.AWS_DEPLOYMENT_ROLE_ARN }}
           role-session-name: OpensearchAgentDeploymentSession
           aws-region: ${{ env.AWS_DEPLOYMENT_REGION_NAME }}
-
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
 
       - name: Cache Terraform providers
         uses: actions/cache@v4
