@@ -12,6 +12,8 @@ permissions:
   contents: read
 
 env:
+  PYTHON_VERSION: 3.11.9
+  UV_VERSION: 0.8.0
   AWS_S3_TOFU_BUCKET_NAME: ${{ vars.AWS_S3_TOFU_BUCKET_NAME }}
   AWS_DEPLOYMENT_ACCOUNT_ID: ${{ vars.AWS_DEPLOYMENT_ACCOUNT_ID }}
   AWS_DEPLOYMENT_REGION_NAME: ${{ vars.AWS_DEPLOYMENT_REGION_NAME }}
@@ -32,6 +34,14 @@ jobs:
     environment: ${{ inputs.environment }}
 
     steps:
+#      - name: Cache OpenTofu
+#        uses: actions/cache@v4
+#        with:
+#          path: ~/.local/share/tofu
+#          key: ${{ runner.os }}-tofu-${{ hashFiles('**/versions.tf', '**/.terraform.lock.hcl') }}
+#          restore-keys: |
+#            ${{ runner.os }}-tofu-
+
       - uses: opentofu/setup-opentofu@v1
 
       - name: Git clone the repository
@@ -57,6 +67,14 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v4
 
+      - name: Cache Terraform providers
+        uses: actions/cache@v4
+        with:
+          path: infra/.terraform
+          key: ${{ runner.os }}-deploy-agent-terraform-${{ hashFiles('infra/.terraform.lock.hcl') }}
+          restore-keys: |
+            ${{ runner.os }}-deploy-agent-terraform-
+
       - name: Tofu init
         run: tofu init -backend-config="bucket=${{ env.AWS_S3_TOFU_BUCKET_NAME }}" -backend-config="region=${{ env.AWS_DEPLOYMENT_REGION_NAME }}"
         working-directory: ./infra/
@@ -76,16 +94,27 @@ jobs:
           echo "AGENT_RUNTIME_ROLE_ARN=$(tofu output -raw agent_runtime_role_arn)" >> $GITHUB_OUTPUT
         working-directory: ./infra/
 
+      - name: Cache Python installation
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ${{ env.pythonLocation }}
+          key: ${{ runner.os }}-deploy-agent-${{ env.PYTHON_VERSION }}-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-deploy-agent-${{ env.PYTHON_VERSION }}-
+
       - name: Set up python
         id: setup-python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11.9'
+          python-version: '${{ env.PYTHON_VERSION }}'
 
       - name: Install uv
         uses: astral-sh/setup-uv@v6
         with:
-          version: 0.8.0
+          version: '${{ env.UV_VERSION }}'
+          enable-cache: true
 
       - name: Install dependencies
         run: uv sync
