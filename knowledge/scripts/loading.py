@@ -1,5 +1,6 @@
 import json
 import os
+from pathlib import Path
 
 import boto3
 import tqdm
@@ -52,17 +53,20 @@ def load_examples():
 def load_docs():
     session = boto3.Session()
     embeddings = BedrockEmbeddings(
-        client=session.client("bedrock-runtime", region_name="us-east-1"),
+        client=session.client("bedrock-runtime", region_name="eu-central-1"),
         model_id="amazon.titan-embed-text-v2:0"
     )
 
+    root_path = Path(__file__).parent.parent.parent
+    data_path = root_path / "kownledge" / "data"
+
     chunks = []
-    with open("chunks_md.json", "r", encoding="utf-8") as file:
+    with (data_path / "opensearch_docs_chunks.ndjson" ).open("r", encoding="utf-8") as file:
         for line in file.readlines():
             chunks.append(Document(**json.loads(line)))
 
     opensearch_url = os.environ.get("OPENSEARCH_URL")
-    opensearch_index_name = "knowledge-base-docs"
+    opensearch_index_name = "opensearch-agent-staging"
 
     print(f"OpenSearch URL: {opensearch_url}")
     print(f"OpenSearch index name: {opensearch_index_name}")
