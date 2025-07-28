@@ -29,9 +29,9 @@ def chunking_md():
     splitter_md = MarkdownHeaderTextSplitter(headers_to_split_on)
     splitter_token = TokenTextSplitter(chunk_size=2000, chunk_overlap=200)
 
-    root = r""
-    root_path = Path(root)
-    markdown_files = list(root_path.glob("**/*.md"))
+    root_path = Path(__file__).parent.parent.parent
+    data_path = root_path / "data" / "opensearch"
+    markdown_files = list(data_path.glob("**/*.md"))
 
     chunks = []
     for markdown_file in tqdm.tqdm(markdown_files):
@@ -44,45 +44,45 @@ def chunking_md():
             })
             chunks.append(chunk)
 
-    open_path_str = r""
-    with open(open_path_str, "w", encoding="utf-8") as file:
+    opensearch_docs_chunks_path = root_path / "knowledge" / "data" / "opensearch_docs_chunks.ndjson"
+    with open(opensearch_docs_chunks_path, "w", encoding="utf-8") as file:
         for chunk in chunks:
             file.writelines(chunk.json() + "\n")
 
 
-def chunking_json():
-    splitter = RecursiveJsonSplitter(max_chunk_size=2000)
-
-    root_path_str = r""
-    root_path = Path(root_path_str)
-    json_files = root_path.glob("**/*.json")
-
-    chunks = []
-    for json_file in json_files:
-        if json_file.name in ["chunks_json.json", "chunks_md.json"]:
-            continue
-        json_data = json.load(json_file.open(encoding="utf-8"))
-
-        for chunk in splitter.create_documents([json_data], convert_lists=True):
-            chunk.metadata.update({
-                "filepath": str(json_file.relative_to(root_path)),
-                "filepath_parts": json_file.relative_to(root_path).parts
-            })
-            chunks.append(chunk)
-
-    open_path_str = r""
-    with open(open_path_str, "w", encoding="utf-8") as file:
-        for chunk in chunks:
-            file.writelines(chunk.json() + "\n")
-
-    # markdown_file = r""
-    # with open(markdown_file, "r") as file:
-    #     markdown_text = file.read()
-    #
-    # chunks = splitter.split_text(markdown_text)  # Zachowuje hierarchię nagłówków w metadanych
-    #
-    # for i, chunk in enumerate(chunks):
-    #     print(i, chunk.metadata)
+# def chunking_json():
+#     splitter = RecursiveJsonSplitter(max_chunk_size=2000)
+#
+#     root_path_str = r""
+#     root_path = Path(root_path_str)
+#     json_files = root_path.glob("**/*.json")
+#
+#     chunks = []
+#     for json_file in json_files:
+#         if json_file.name in ["chunks_json.json", "chunks_md.json"]:
+#             continue
+#         json_data = json.load(json_file.open(encoding="utf-8"))
+#
+#         for chunk in splitter.create_documents([json_data], convert_lists=True):
+#             chunk.metadata.update({
+#                 "filepath": str(json_file.relative_to(root_path)),
+#                 "filepath_parts": json_file.relative_to(root_path).parts
+#             })
+#             chunks.append(chunk)
+#
+#     open_path_str = r""
+#     with open(open_path_str, "w", encoding="utf-8") as file:
+#         for chunk in chunks:
+#             file.writelines(chunk.json() + "\n")
+#
+#     # markdown_file = r""
+#     # with open(markdown_file, "r") as file:
+#     #     markdown_text = file.read()
+#     #
+#     # chunks = splitter.split_text(markdown_text)  # Zachowuje hierarchię nagłówków w metadanych
+#     #
+#     # for i, chunk in enumerate(chunks):
+#     #     print(i, chunk.metadata)
 
 
 if __name__ == "__main__":
