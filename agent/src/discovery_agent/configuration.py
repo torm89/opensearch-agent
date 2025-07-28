@@ -6,7 +6,6 @@ from typing import Optional, List
 from botocore.exceptions import ClientError
 from langchain.chat_models import init_chat_model
 from langchain_aws import ChatBedrockConverse
-from langchain_core.language_models import LanguageModelLike
 from langchain_core.runnables import RunnableConfig, Runnable
 from langchain_core.runnables.utils import Input, Output
 from langchain_core.tools import BaseTool
@@ -16,10 +15,6 @@ from discovery_agent.tools.call_open_search import CallOpenSearchTool
 
 
 class Configuration(BaseModel):
-    opensearch_host: str
-    opensearch_region: str
-    opensearch_service: str = "es"
-
     model_large_name: str = "us.anthropic.claude-sonnet-4-20250514-v1:0"
     model_small_name: str = "us.anthropic.claude-3-haiku-20240307-v1:0"
 
@@ -42,7 +37,6 @@ class Configuration(BaseModel):
             temperature=0,
         )
 
-
     def model_by_name(self, model_name: str):
         return ChatBedrockConverse(
             model_id=model_name,
@@ -60,16 +54,16 @@ class Configuration(BaseModel):
 
     @staticmethod
     def get_default_tools():
-        from discovery_agent.tools.read_from_s3 import ReadDocumentFromS3Tool
-        from discovery_agent.tools.search_in_kb import SearchInSchemaDocumentationTool
-        from discovery_agent.tools.search_in_kb import SearchInSchemaExamplesTool
-        from discovery_agent.tools.search_in_kb import SearchInSearchServiceApiDocumentationTool
+        # from discovery_agent.tools.read_from_s3 import ReadDocumentFromS3Tool
+        from discovery_agent.tools.search_in_kb import SearchInOpensearchDocumentationTool
+        # from discovery_agent.tools.search_in_kb import SearchInSchemaExamplesTool
+        # from discovery_agent.tools.search_in_kb import SearchInSearchServiceApiDocumentationTool
 
         return [
-            ReadDocumentFromS3Tool(),
-            SearchInSchemaDocumentationTool(),
-            SearchInSchemaExamplesTool(),
-            SearchInSearchServiceApiDocumentationTool(),
+            # ReadDocumentFromS3Tool(),
+            SearchInOpensearchDocumentationTool(),
+            # SearchInSchemaExamplesTool(),
+            # SearchInSearchServiceApiDocumentationTool(),
             CallOpenSearchTool(),
         ]
 

@@ -94,6 +94,8 @@ jobs:
         run: |
           echo "AGENT_RUNTIME_NAME=$(tofu output -raw agent_runtime_name)" >> $GITHUB_OUTPUT
           echo "AGENT_RUNTIME_ROLE_ARN=$(tofu output -raw agent_runtime_role_arn)" >> $GITHUB_OUTPUT
+          echo "KNOWLEDGE_OPENSEARCH_COLLECTION_URL=$(tofu output -raw knowledge_opensearch_collection_url)" >> $GITHUB_OUTPUT
+          echo "KNOWLEDGE_OPENSEARCH_DOCS_INDEX_NAME=$(tofu output -raw knowledge_opensearch_docs_index_name)" >> $GITHUB_OUTPUT
         working-directory: ./infra/
 
       - name: Cache Python installation
@@ -126,7 +128,9 @@ jobs:
           uv run python ./infra/scripts/agentcore_runtime_update_or_create.py \
             --agent-runtime-name "${{ steps.tofu-output.outputs.AGENT_RUNTIME_NAME }}" \
             --agent-runtime-image-uri "${{ env.AWS_ECR_AGENT_REPOSITORY_URI }}:${{ steps.version.outputs.HASH_AGENT }}" \
-            --agent-runtime-role-arn "${{ steps.tofu-output.outputs.AGENT_RUNTIME_ROLE_ARN }}"
+            --agent-runtime-role-arn "${{ steps.tofu-output.outputs.AGENT_RUNTIME_ROLE_ARN }}" \
+            --knowledge-opensearch-collection-url "${{ steps.tofu-output.outputs.KNOWLEDGE_OPENSEARCH_COLLECTION_URL }}" \
+            --knowledge-opensearch-docs-index-name "${{ steps.tofu-output.outputs.KNOWLEDGE_OPENSEARCH_DOCS_INDEX_NAME }}"
 #
 #      - name: Install poetry
 #        run: |

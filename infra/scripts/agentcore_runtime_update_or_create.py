@@ -6,17 +6,32 @@ from typing import Optional
 import boto3
 
 
-def create_agent_runtime(client, runtime_name, image_uri, network_configuration, role_arn):
-    response = client.create_agent_runtime(
-        agentRuntimeName=runtime_name,
-        agentRuntimeArtifact={
+def get_agent_runtime_environment_variables(
+        knowledge_opensearch_collection_url, knowledge_opensearch_docs_index_name
+):
+    return {
+        'KNOWLEDGE_OPENSEARCH_COLLECTION_URL': knowledge_opensearch_collection_url,
+        'KNOWLEDGE_OPENSEARCH_DOCS_INDEX_NAME': knowledge_opensearch_docs_index_name
+    }
+
+
+def get_agent_runtime_configuration(image_uri, role_arn, environment_variables):
+    return {
+        'agentRuntimeArtifact': {
             'containerConfiguration': {
                 'containerUri': image_uri
             }
         },
-        networkConfiguration=network_configuration,
-        roleArn=role_arn
-    )
+        'networkConfiguration': {
+            "networkMode": "PUBLIC"
+        },
+        'roleArn': role_arn,
+        'environmentVariables': environment_variables
+    }
+
+
+def create_agent_runtime(client, runtime_name, runtime_configuration):
+    response = client.create_agent_runtime(agentRuntimeName=runtime_name, **runtime_configuration)
 
     return {
         'agentRuntimeId': response['agentRuntimeId'],
@@ -24,17 +39,8 @@ def create_agent_runtime(client, runtime_name, image_uri, network_configuration,
     }
 
 
-def update_agent_runtime(client, runtime_id, image_uri, network_configuration, role_arn):
-    response = client.update_agent_runtime(
-        agentRuntimeId=runtime_id,
-        agentRuntimeArtifact={
-            'containerConfiguration': {
-                'containerUri': image_uri
-            }
-        },
-        networkConfiguration=network_configuration,
-        roleArn=role_arn
-    )
+def update_agent_runtime(client, runtime_id, runtime_configuration):
+    response = client.update_agent_runtime(agentRuntimeId=runtime_id, **runtime_configuration)
 
     return {
         'agentRuntimeId': response['agentRuntimeId'],
@@ -63,9 +69,13 @@ def get_agent_runtime_status(client, runtime_id):
 
 if __name__ == "__main__":
     parser = ArgumentParser()
+
     parser.add_argument('--agent-runtime-name', type=str, required=True)
     parser.add_argument('--agent-runtime-image-uri', type=str, required=True)
     parser.add_argument('--agent-runtime-role-arn', type=str, required=True)
+
+    parser.add_argument('--knowledge-opensearch-collection-url', type=str, required=True)
+    parser.add_argument('--knowledge-opensearch-docs-index-name', type=str, required=True)
 
     args = parser.parse_args()
 
@@ -73,22 +83,23 @@ if __name__ == "__main__":
     agent_runtime_image_uri = args.agent_runtime_image_uri
     agent_runtime_role_arn = args.agent_runtime_role_arn
 
-    agent_network_configuration = {
-        "networkMode": "PUBLIC"
-    }
-
     client = boto3.client('bedrock-agentcore-control', region_name=os.environ['AWS_DEPLOYMENT_REGION_NAME'])
 
     agent_runtime_id = check_agent_runtime_exists(client, agent_runtime_name)
 
+    agent_environment_variables = get_agent_runtime_environment_variables(
+        args.knowledge_opensearch_collection_url, args.knowledge_opensearch_docs_index_name
+    )
+    agent_runtime_configuration = get_agent_runtime_configuration(
+        agent_runtime_image_uri, agent_runtime_role_arn, agent_environment_variables
+    )
+
     if agent_runtime_id:
         print(f"Agent Runtime {agent_runtime_name} already exists. Updating...")
-        agent_runtime = update_agent_runtime(
-            client, agent_runtime_id, agent_runtime_image_uri, agent_network_configuration, agent_runtime_role_arn)
+        agent_runtime = update_agent_runtime(client, agent_runtime_id, agent_runtime_configuration)
     else:
         print(f"Agent Runtime {agent_runtime_name} does not exist. Creating...")
-        agent_runtime = create_agent_runtime(
-            client, agent_runtime_name, agent_runtime_image_uri, agent_network_configuration, agent_runtime_role_arn)
+        agent_runtime = create_agent_runtime(client, agent_runtime_name, agent_runtime_configuration)
 
     agent_runtime_id = agent_runtime['agentRuntimeId']
     agent_runtime_arn = agent_runtime['agentRuntimeArn']

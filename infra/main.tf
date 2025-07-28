@@ -6,10 +6,10 @@ provider "aws" {
 #   region = "us-east-1"
 # }
 
-# provider "opensearch" {
-#   url         = module.opensearch_knowledge.endpoint
-#   healthcheck = false
-# }
+provider "opensearch" {
+  url         = module.opensearch_collection.endpoint
+  healthcheck = false
+}
 
 locals {
   agent_name = "OpensearchAgent${title(var.env)}"

@@ -9,6 +9,11 @@ from pydantic import BaseModel
 class InputState(BaseModel):
     question: str
 
+    opensearch_host: str
+    opensearch_region: str
+    opensearch_service: str = "es"
+
+
 
 class HybridState(InputState):
     messages: Annotated[list, add_messages]

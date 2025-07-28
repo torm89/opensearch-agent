@@ -47,9 +47,9 @@ async def discover(state: HybridState, config: RunnableConfig):
             and len(response.tool_calls) > 0 \
             and response.tool_calls[0]['name'] == "CallOsduSearchService":
         opensearch_config = OpenSearchConfig(
-            host=configuration.opensearch_host,
-            region=configuration.opensearch_region,
-            service=configuration.opensearch_service
+            host=state.opensearch_host,
+            region=state.opensearch_region,
+            service=state.opensearch_service
         )
         response.tool_calls[0]["args"].update({"opensearch_config": opensearch_config})
 
